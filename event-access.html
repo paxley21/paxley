@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Event Access</title>
+<style>
+  :root{
+    --ink:#1b1f2a;
+    --paper:#f6f3ec;
+    --line:#2c3142;
+    --brass:#a9812f;
+    --brass-deep:#8a6821;
+    --error:#a3372c;
+    --ok:#3c6b4f;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:
+      radial-gradient(circle at 20% 15%, rgba(169,129,47,0.10), transparent 45%),
+      radial-gradient(circle at 85% 80%, rgba(169,129,47,0.08), transparent 50%),
+      var(--ink);
+    font-family: 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+    color: var(--paper);
+    padding: 24px;
+  }
+
+  .card{
+    width: 100%;
+    max-width: 440px;
+    border: 1px solid rgba(246,243,236,0.18);
+    padding: 48px 40px 40px;
+    position: relative;
+    background: linear-gradient(180deg, rgba(246,243,236,0.03), transparent 40%);
+  }
+  .card::before{
+    content:"";
+    position:absolute;
+    inset: 10px;
+    border: 1px solid rgba(169,129,47,0.35);
+    pointer-events:none;
+  }
+
+  .kicker{
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--brass);
+    text-align:center;
+    margin: 0 0 6px;
+    letter-spacing: 0.02em;
+  }
+  h1{
+    font-size: 30px;
+    line-height: 1.15;
+    text-align:center;
+    margin: 0 0 8px;
+    font-weight: 500;
+  }
+  .sub{
+    text-align:center;
+    font-size: 15px;
+    color: rgba(246,243,236,0.65);
+    margin: 0 0 36px;
+    line-height:1.5;
+  }
+
+  label{
+    display:block;
+    font-size: 13px;
+    color: rgba(246,243,236,0.7);
+    margin-bottom: 8px;
+    font-family: Georgia, serif;
+  }
+
+  input[type="text"]{
+    width:100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(246,243,236,0.35);
+    color: var(--paper);
+    font-family: 'Courier New', monospace;
+    font-size: 20px;
+    letter-spacing: 0.18em;
+    text-align:center;
+    padding: 10px 4px 12px;
+    outline: none;
+    transition: border-color 0.25s ease;
+  }
+  input[type="text"]::placeholder{
+    color: rgba(246,243,236,0.28);
+    letter-spacing: 0.1em;
+  }
+  input[type="text"]:focus{
+    border-color: var(--brass);
+  }
+  input[type="text"].shake{
+    animation: shake 0.4s ease;
+    border-color: var(--error);
+  }
+  @keyframes shake{
+    0%,100%{transform:translateX(0);}
+    20%{transform:translateX(-6px);}
+    40%{transform:translateX(6px);}
+    60%{transform:translateX(-4px);}
+    80%{transform:translateX(4px);}
+  }
+
+  button{
+    width:100%;
+    margin-top: 28px;
+    padding: 14px 0;
+    background: var(--brass);
+    color: var(--ink);
+    border: none;
+    font-family: Georgia, serif;
+    font-size: 15px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  button:hover{ background: var(--brass-deep); }
+  button:disabled{
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  .msg{
+    margin-top: 18px;
+    min-height: 20px;
+    text-align:center;
+    font-size: 14px;
+    font-family: Georgia, serif;
+  }
+  .msg.error{ color: #e08a7d; }
+  .msg.ok{ color: #8fd3ab; }
+
+  .checkmark{
+    display:block;
+    width: 46px;
+    height: 46px;
+    margin: 0 auto 14px;
+    opacity: 0;
+    transform: scale(0.6);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  .checkmark.show{
+    opacity: 1;
+    transform: scale(1);
+  }
+  .checkmark circle{
+    stroke: #8fd3ab;
+    stroke-width: 1.5;
+    fill: none;
+    stroke-dasharray: 160;
+    stroke-dashoffset: 160;
+    transition: stroke-dashoffset 0.6s ease;
+  }
+  .checkmark path{
+    stroke: #8fd3ab;
+    stroke-width: 2;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 40;
+    stroke-dashoffset: 40;
+    transition: stroke-dashoffset 0.4s ease 0.4s;
+  }
+  .checkmark.show circle{ stroke-dashoffset: 0; }
+  .checkmark.show path{ stroke-dashoffset: 0; }
+
+  .hint{
+    text-align:center;
+    margin-top: 24px;
+    font-size: 12px;
+    color: rgba(246,243,236,0.35);
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <p class="kicker">You're invited to</p>
+  <h1 id="eventName">The Gathering</h1>
+  <p class="sub">Enter the code from your invitation to confirm your seat and join the call.</p>
+
+  <form id="accessForm" autocomplete="off">
+    <label for="codeInput">Invitation code</label>
+    <input type="text" id="codeInput" name="code" placeholder="XXXX-XXXX" maxlength="20" required>
+    <button type="submit" id="submitBtn">Confirm invitation</button>
+  </form>
+
+  <svg class="checkmark" id="checkmark" viewBox="0 0 52 52">
+    <circle cx="26" cy="26" r="23"/>
+    <path d="M15 27 L23 35 L38 18"/>
+  </svg>
+
+  <p class="msg" id="msg"></p>
+  <p class="hint">Having trouble? Contact the host who sent your invitation.</p>
+</div>
+
+<script>
+  // ---- CONFIGURE THESE THREE THINGS ----
+  const EVENT_NAME = "The Gathering";                       // shown at the top of the card
+  const GOOGLE_MEET_URL = "https://meet.google.com/ngu-ovii-obp"; // your Meet link
+  const VALID_CODES = [
+    "EVENT-2026",
+    "GUEST-0001",
+    "GUEST-0002"
+  ];
+  // ---------------------------------------
+
+  document.getElementById('eventName').textContent = EVENT_NAME;
+
+  const form = document.getElementById('accessForm');
+  const input = document.getElementById('codeInput');
+  const btn = document.getElementById('submitBtn');
+  const msg = document.getElementById('msg');
+  const checkmark = document.getElementById('checkmark');
+
+  const normalize = (s) => s.trim().toUpperCase().replace(/\s+/g, '');
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    const entered = normalize(input.value);
+    const isValid = VALID_CODES.some(c => normalize(c) === entered);
+
+    if (!entered) return;
+
+    if (isValid) {
+      btn.disabled = true;
+      input.disabled = true;
+      msg.className = 'msg ok';
+      msg.textContent = 'Invitation confirmed. Taking you to the call…';
+      checkmark.classList.add('show');
+      setTimeout(function(){
+        window.location.href = GOOGLE_MEET_URL;
+      }, 1400);
+    } else {
+      msg.className = 'msg error';
+      msg.textContent = "That code doesn't match our guest list. Please check and try again.";
+      input.classList.remove('shake');
+      void input.offsetWidth; // restart animation
+      input.classList.add('shake');
+    }
+  });
+
+  input.addEventListener('input', function(){
+    msg.textContent = '';
+    msg.className = 'msg';
+  });
+</script>
+
+</body>
+</html>
